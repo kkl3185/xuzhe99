@@ -106,8 +106,13 @@
   input:focus, textarea:focus, select:focus { border-color: var(--brand); background: var(--card); box-shadow: 0 0 0 4px var(--brand-soft); }
   textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
   .hint { font-size: 12px; color: var(--muted); margin: 8px 0 16px; line-height: 1.5; }
-  .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; }
   .row > .field { flex: 1; min-width: 140px; }
+  .row > .field.field-btn { flex: 0 0 auto; min-width: 0; width: auto; }
+  .btn-row { display: flex; align-items: center; gap: 8px; }
+  .input-with-btn { display: flex; gap: 8px; align-items: center; }
+  .input-with-btn > input, .input-with-btn > select { flex: 1; min-width: 0; width: auto; }
+  .input-with-btn > button { flex-shrink: 0; white-space: nowrap; }
 
   button {
     cursor: pointer; border: none; border-radius: 11px; font-family: inherit;
@@ -164,10 +169,11 @@
   .shop-item { border: none; border-radius: 0; background: transparent; gap: 12px; }
   .shop-item-wrap.done .text { text-decoration: line-through; color: var(--muted); }
   .shop-item .text { flex: 1; font-size: 15px; }
-  .shop-sub { display: flex; gap: 12px; padding: 13px 15px; border-top: 1px dashed var(--line); flex-wrap: wrap; }
-  .sub-field { flex: 1; min-width: 130px; display: flex; flex-direction: column; }
-  .sub-field label { font-size: 12px; }
-  .sub-field input { font-size: 13px; padding: 9px 11px; }
+  .shop-sub { display: flex; gap: 6px 10px; padding: 8px 12px; border-top: 1px dashed var(--line); flex-wrap: wrap; align-items: flex-end; }
+  .sub-field { flex: 1 1 110px; min-width: 100px; display: flex; flex-direction: column; }
+  .sub-field label { font-size: 11px; margin-bottom: 2px; }
+  .sub-field input { font-size: 12px; padding: 5px 8px; }
+  .cat-tag { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 20px; font-size: 11px; background: var(--brand); color: #fff; vertical-align: middle; }
   .progress { height: 9px; background: var(--line); border-radius: 20px; overflow: hidden; margin: 4px 0 16px; }
   .progress > i { display: block; height: 100%; background: linear-gradient(90deg, var(--green), #9bb98f); width: 0; transition: .3s; }
 
@@ -452,6 +458,14 @@
   .home-card .em img { width: 30px; height: 30px; object-fit: cover; border-radius: 8px; display: block; margin: 0 auto 3px; }
   .sec-icon img { width: 30px; height: 30px; object-fit: cover; border-radius: 8px; vertical-align: middle; margin-right: 8px; display: inline-block; }
   .brand .logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; display: block; }
+  .tab-x { margin-left: 6px; font-size: 11px; color: var(--muted); cursor: pointer; padding: 0 4px; border-radius: 6px; }
+  .tab-x:hover { background: var(--danger); color: #fff; }
+  .weight-now { font-size: 34px; font-weight: 800; color: var(--brand); }
+  .weight-now .unit { font-size: 16px; color: var(--muted); margin-left: 4px; font-weight: 600; }
+  .weight-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .weight-slval { font-size: 16px; font-weight: 700; min-width: 48px; text-align: right; }
+  #w-slider { accent-color: var(--brand); }
+  .weight-chart { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line); }
 </style>
 </head>
 <body>
@@ -572,6 +586,27 @@
       </div>
 
       <div class="card">
+        <h2>⚖️ 体重记录 <span class="tag">单位：千克</span></h2>
+        <div style="text-align:center;padding:6px 0">
+          <div class="weight-now"><span id="w-cur">50.0</span><span class="unit">kg</span></div>
+          <div class="weight-sub" id="w-sub">初始 50.0 kg　|　较初始 0.0 kg</div>
+        </div>
+        <div class="row" style="align-items:center;gap:10px;margin-top:6px">
+          <input type="range" id="w-slider" min="30" max="120" step="0.1" value="50" style="flex:1">
+          <span class="weight-slval" id="w-slval">50.0</span>
+        </div>
+        <div class="row" style="justify-content:center;gap:8px;margin-top:10px">
+          <button class="btn-primary" id="w-record">记录今日体重</button>
+          <button class="btn-ghost btn-sm" id="w-chart">📈 查看折线图</button>
+        </div>
+        <div class="weight-chart" id="w-chart-box" style="display:none">
+          <div id="w-chart-svg"></div>
+          <div class="hint">每次「记录今日体重」会在当天存一条数据；同一天重复记录会覆盖。</div>
+        </div>
+        <div class="list" id="w-list" style="margin-top:10px"></div>
+      </div>
+
+      <div class="card">
         <h2>🍽️ 三餐记录 <span class="tag">（食物 + 克数 → 自动算热量，可改）</span></h2>
         <div class="date-nav">
           <button id="meal-date-prev" title="前一天">‹</button>
@@ -591,10 +626,13 @@
         <div class="hint">先选上方日期查看某一天；下方「早/午/晚/加餐」只是添加时归类的标签。热量按内置食物库自动估算，可改。</div>
         <div class="row">
           <div class="field"><label>吃了什么</label><input type="text" id="meal-food" placeholder="如：鸡胸肉" list="food-list"><datalist id="food-list"></datalist></div>
-          <div class="field" style="max-width:130px"><label>重量 (克)</label><input type="number" id="meal-grams" min="0" placeholder="0"></div>
-          <div class="field" style="max-width:140px"><label>热量 (kcal)</label><input type="number" id="meal-kcal" min="0" placeholder="自动"></div>
-          <div class="field" style="max-width:150px"><label>进食时间</label><input type="time" id="meal-time"></div>
-          <div class="field" style="display:flex;align-items:flex-end;gap:8px"><button class="btn-primary" id="meal-add">添加</button><button class="btn-ghost btn-sm" id="meal-cancel" style="display:none">取消</button></div>
+          <div class="field" style="max-width:110px;min-width:0"><label>重量 (克)</label><input type="number" id="meal-grams" min="0" placeholder="0"></div>
+        </div>
+        <div class="row">
+          <div class="field" style="max-width:130px;min-width:0"><label>热量 (kcal)</label><input type="number" id="meal-kcal" min="0" placeholder="自动"></div>
+          <div class="field"><label>进食时间</label>
+            <div class="input-with-btn"><input type="time" id="meal-time"><button class="btn-primary" id="meal-add">添加</button><button class="btn-ghost btn-sm" id="meal-cancel" style="display:none">取消</button></div>
+          </div>
         </div>
         <div class="hint">热量根据内置食物库按「每100克热量 × 克数」自动估算；查不到的食材你可直接手填 kcal。</div>
         <div style="margin:8px 0 16px">
@@ -608,12 +646,15 @@
       <div class="card">
         <h2>🥤 饮品记录 <span class="tag">（品牌 · 饮料 · 时间 · 价格）</span></h2>
         <div class="row">
-          <div class="field" style="max-width:200px"><label>奶茶品牌</label><select id="drink-brand"></select></div>
-          <div class="field" style="max-width:160px"><label>饮料</label><select id="drink-name"></select></div>
-          <div class="field" style="max-width:150px"><label>时间</label><input type="time" id="drink-time"></div>
-          <div class="field" style="max-width:140px"><label>价格 (¥)</label><input type="number" id="drink-price" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div>
-          <div class="field" style="max-width:140px"><label>热量 (kcal)</label><input type="number" id="drink-kcal" min="0" placeholder="自动"></div>
-          <div class="field" style="display:flex;align-items:flex-end;gap:8px"><button class="btn-primary" id="drink-add">添加</button><button class="btn-ghost btn-sm" id="drink-cancel" style="display:none">取消</button></div>
+          <div class="field" style="max-width:150px;min-width:0"><label>奶茶品牌</label><select id="drink-brand"></select></div>
+          <div class="field" style="max-width:130px;min-width:0"><label>饮料</label><select id="drink-name"></select></div>
+          <div class="field" style="max-width:130px;min-width:0"><label>时间</label><input type="time" id="drink-time"></div>
+        </div>
+        <div class="row">
+          <div class="field" style="max-width:130px;min-width:0"><label>价格 (¥)</label><input type="number" id="drink-price" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div>
+          <div class="field"><label>热量 (kcal)</label>
+            <div class="input-with-btn"><input type="number" id="drink-kcal" min="0" placeholder="自动"><button class="btn-primary" id="drink-add">添加</button><button class="btn-ghost btn-sm" id="drink-cancel" style="display:none">取消</button></div>
+          </div>
         </div>
         <div class="hint">选好「品牌 + 饮料」后热量按内置值自动估算（可改）。奶茶品牌仅作记录标签，价格与热量按实填即可。</div>
         <div style="margin:8px 0 16px">
@@ -627,11 +668,14 @@
       <div class="card">
         <h2>🏃 运动记录 <span class="tag">（类型 · 时长 · 消耗）</span></h2>
         <div class="row">
-          <div class="field" style="max-width:160px"><label>运动类型</label><select id="ex-type"></select></div>
-          <div class="field" style="max-width:130px"><label>时长 (分钟)</label><input type="number" id="ex-min" placeholder="0" min="0"></div>
-          <div class="field" style="max-width:140px"><label>运动时间</label><input type="time" id="ex-time"></div>
-          <div class="field" style="max-width:130px"><label>消耗 (kcal)</label><input type="number" id="ex-kcal" placeholder="自动估算"></div>
-          <div class="field" style="display:flex;align-items:flex-end;gap:8px"><button class="btn-primary" id="ex-add">添加</button><button class="btn-ghost btn-sm" id="ex-cancel" style="display:none">取消</button></div>
+          <div class="field"><label>运动类型</label><select id="ex-type"></select></div>
+          <div class="field" style="max-width:110px;min-width:0"><label>时长 (分钟)</label><input type="number" id="ex-min" placeholder="0" min="0"></div>
+        </div>
+        <div class="row">
+          <div class="field" style="max-width:130px;min-width:0"><label>运动时间</label><input type="time" id="ex-time"></div>
+          <div class="field"><label>消耗 (kcal)</label>
+            <div class="input-with-btn"><input type="number" id="ex-kcal" placeholder="自动估算"><button class="btn-primary" id="ex-add">添加</button><button class="btn-ghost btn-sm" id="ex-cancel" style="display:none">取消</button></div>
+          </div>
         </div>
         <div style="margin:8px 0 16px">
           <span class="stat"><span class="num" id="ex-total-min">0</span><span class="lbl">今日运动(分)</span></span>
@@ -711,9 +755,10 @@
           <button type="button" class="rchip" data-r="0">日</button>
         </div>
         <div class="row">
-          <div class="field" style="max-width:130px"><label>时间</label><input type="time" id="study-time"></div>
-          <div class="field"><label>任务内容</label><input type="text" id="study-text" placeholder="如：复习高数第3章 / 背单词 50 个"></div>
-          <div class="field" style="display:flex;align-items:flex-end;gap:8px"><button class="btn-primary" id="study-add">添加任务</button><button class="btn-ghost btn-sm" id="study-cancel" style="display:none">取消</button></div>
+          <div class="field" style="max-width:120px;min-width:0"><label>时间</label><input type="time" id="study-time"></div>
+          <div class="field"><label>任务内容</label>
+            <div class="input-with-btn"><input type="text" id="study-text" placeholder="如：复习高数第3章 / 背单词 50 个"><button class="btn-primary" id="study-add">添加任务</button><button class="btn-ghost btn-sm" id="study-cancel" style="display:none">取消</button></div>
+          </div>
         </div>
         <div class="progress" style="margin-top:16px"><i id="study-bar"></i></div>
         <div class="list" id="study-list"></div>
@@ -734,12 +779,37 @@
     <section class="section" id="sec-shop">
       <div class="sec-head"><h1><span class="sec-icon" data-sec-icon="shop"></span>购物清单</h1><p>勾选完成自动划线，记录购买时间与价格</p></div>
       <div class="card">
+        <h2>🛡️ 物品寿命 <span class="tag">看它能陪你多久</span></h2>
+        <div class="row">
+          <div class="field"><label>物品名称</label><input type="text" id="pc-name" placeholder="如：机械键盘、行李箱、吹风机"></div>
+          <div class="field" style="max-width:200px"><label>购买日期</label><input type="date" id="pc-date"></div>
+        </div>
+        <div class="row">
+          <div class="field" style="max-width:160px"><label>花费 (¥)</label><input type="text" inputmode="decimal" id="pc-price" placeholder="0.00"></div>
+          <div class="field"><label>购买平台</label><input type="text" id="pc-platform" placeholder="如：淘宝 / 京东 / 拼多多 / 线下"></div>
+          <div class="field" style="max-width:260px"><label>退役日期（可选）</label>
+            <div class="input-with-btn"><input type="date" id="pc-end"><button class="btn-primary" id="pc-add">保存</button><button class="btn-ghost btn-sm" id="pc-cancel" style="display:none">取消</button></div>
+          </div>
+        </div>
+        <div class="hint">不填退役日期 = 还在用，显示"已陪伴多少天"；填了 = 已坏 / 已丢，按"退役 − 购买"算实际寿命，帮你对比哪件更耐用。</div>
+        <div class="list" id="pc-list"></div>
+      </div>
+
+      <div class="card">
         <h2>➕ 添加物品</h2>
         <div class="row">
-          <div class="field"><input type="text" id="shop-input" placeholder="要买的东西，例如：牛奶 2 盒"></div>
-          <div class="field" style="display:flex;align-items:flex-end;gap:8px"><button class="btn-primary" id="shop-add">加入清单</button><button class="btn-ghost btn-sm" id="shop-cancel" style="display:none">取消</button></div>
+          <div class="field"><label>要买的东西</label>
+            <div class="input-with-btn"><input type="text" id="shop-input" placeholder="例如：牛奶 2 盒"><button class="btn-primary" id="shop-add">加入清单</button><button class="btn-ghost btn-sm" id="shop-cancel" style="display:none">取消</button></div>
+          </div>
+          <div class="field" style="max-width:130px;min-width:0"><label>分类</label><select id="shop-cat"></select></div>
+        </div>
+        <div class="row" style="align-items:flex-end;margin-top:8px">
+          <div class="field" style="max-width:320px"><label>新增分类</label>
+            <div class="input-with-btn"><input type="text" id="shop-new-cat" placeholder="如：日用品"><button class="btn-ghost btn-sm" id="shop-add-cat">+ 添加分类</button></div>
+          </div>
         </div>
       </div>
+
       <div class="card">
         <h2>📝 清单 <span class="tag" id="shop-progress-txt"></span></h2>
         <div style="margin-bottom:6px">
@@ -749,53 +819,50 @@
         <div class="progress"><i id="shop-progress-bar"></i></div>
         <div class="list" id="shop-list"></div>
       </div>
-
-      <div class="card">
-        <h2>🛡️ 物品寿命 <span class="tag">看它能陪你多久</span></h2>
-        <div class="row">
-          <div class="field"><label>物品名称</label><input type="text" id="pc-name" placeholder="如：机械键盘、行李箱、吹风机"></div>
-          <div class="field" style="max-width:200px"><label>购买日期</label><input type="date" id="pc-date"></div>
-        </div>
-        <div class="row">
-          <div class="field" style="max-width:160px"><label>花费 (¥)</label><input type="text" inputmode="decimal" id="pc-price" placeholder="0.00"></div>
-          <div class="field"><label>购买平台</label><input type="text" id="pc-platform" placeholder="如：淘宝 / 京东 / 拼多多 / 线下"></div>
-          <div class="field" style="max-width:200px"><label>退役日期（可选）</label><input type="date" id="pc-end"></div>
-          <div class="field" style="display:flex;align-items:flex-end;gap:8px"><button class="btn-primary" id="pc-add">保存</button><button class="btn-ghost btn-sm" id="pc-cancel" style="display:none">取消</button></div>
-        </div>
-        <div class="hint">不填退役日期 = 还在用，显示"已陪伴多少天"；填了 = 已坏 / 已丢，按"退役 − 购买"算实际寿命，帮你对比哪件更耐用。</div>
-        <div class="list" id="pc-list"></div>
-      </div>
     </section>
 
     <!-- ===== 存钱 ===== -->
     <section class="section" id="sec-money">
-      <div class="sec-head"><h1><span class="sec-icon" data-sec-icon="money"></span>存钱记账</h1><p>生活费 − 当月总花销 = 每月存下的钱；自定每日 / 每周 / 每月预算</p></div>
+      <div class="sec-head"><h1><span class="sec-icon" data-sec-icon="money"></span>存钱记账</h1><p>记「每月生活费」与「当月总花销」，再算上额外入账，自动得出你每月存下多少</p></div>
 
       <div class="card">
         <h2>⚙️ 基本设定</h2>
         <div class="row">
-          <div class="field" style="max-width:200px"><label>每月生活费 (¥)</label><input type="number" id="sv-allowance" min="0" step="0.01"></div>
-          <div class="field" style="max-width:160px"><label>每日预算 (¥)</label><input type="number" id="sv-daily" min="0" step="0.01"></div>
-          <div class="field" style="max-width:160px"><label>每周预算 (¥)</label><input type="number" id="sv-weekly" min="0" step="0.01"></div>
-          <div class="field" style="max-width:160px"><label>每月预算 (¥)</label><input type="number" id="sv-monthly" min="0" step="0.01"></div>
+          <div class="field" style="max-width:340px"><label>每月生活费 (¥)</label>
+            <div class="input-with-btn"><input type="number" id="sv-allowance" min="0" step="0.01"><button class="btn-primary btn-sm" id="sv-save-set">保存设定</button></div>
+          </div>
         </div>
-        <div style="margin-top:12px"><button class="btn-primary btn-sm" id="sv-save-set">保存设定</button></div>
+        <div class="hint">就是你的固定生活费 / 月花销基数，用来算「存下多少」。</div>
       </div>
 
       <div class="card">
-        <h2>📅 月度花销</h2>
+        <h2>📅 月度花销（当月总花销）</h2>
         <div class="row">
-          <div class="field" style="max-width:180px"><label>月份</label><input type="month" id="sv-month"></div>
-          <div class="field" style="max-width:200px"><label>当月总花销 (¥)</label><input type="number" id="sv-month-spend" min="0" step="0.01"></div>
-          <div class="field" style="display:flex;align-items:flex-end"><button class="btn-primary" id="sv-add">记录 / 更新</button></div>
+          <div class="field" style="max-width:170px;min-width:0"><label>月份</label><input type="month" id="sv-month"></div>
+          <div class="field"><label>当月总花销 (¥)</label>
+            <div class="input-with-btn"><input type="number" id="sv-month-spend" min="0" step="0.01"><button class="btn-primary" id="sv-add">记录 / 更新</button></div>
+          </div>
         </div>
         <div class="hint">直接记「一个月总共花了多少」，而不是一笔笔零散记账。</div>
         <div style="margin:8px 0 16px">
           <span class="stat green"><span class="num" id="sv-total-spend">0</span><span class="lbl">累计总花销 ¥</span></span>
           <span class="stat green"><span class="num" id="sv-saved">0</span><span class="lbl">选中月存下 ¥</span></span>
-          <span class="stat amber"><span class="num" id="sv-plan-saved">0</span><span class="lbl">按预算预计存 ¥</span></span>
+          <span class="stat amber"><span class="num" id="sv-extra-total">0</span><span class="lbl">额外入账合计 ¥</span></span>
         </div>
         <div class="list" id="sv-list"></div>
+      </div>
+
+      <div class="card">
+        <h2>💸 额外的入账</h2>
+        <div class="row">
+          <div class="field" style="max-width:170px;min-width:0"><label>日期</label><input type="date" id="sv-extra-date"></div>
+          <div class="field" style="max-width:150px;min-width:0"><label>金额 (¥)</label><input type="number" id="sv-extra-amt" min="0" step="0.01"></div>
+          <div class="field"><label>备注</label>
+            <div class="input-with-btn"><input type="text" id="sv-extra-note" placeholder="如：兼职 / 红包 / 退款"><button class="btn-primary" id="sv-extra-add">添加</button><button class="btn-ghost btn-sm" id="sv-extra-cancel" style="display:none">取消</button></div>
+          </div>
+        </div>
+        <div class="hint">记录生活费之外的额外收入，会自动并入每月结余。</div>
+        <div class="list" id="sv-extra-list"></div>
       </div>
     </section>
 
@@ -807,12 +874,14 @@
         <h2>🏷️ 选择爱好 <span class="tag">可随时新增</span></h2>
         <div class="tabs" id="hobby-tabs"></div>
         <div class="row" style="align-items:flex-end">
-          <div class="field" style="max-width:260px"><label>新增爱好</label><input type="text" id="hobby-new" placeholder="如：绘画 / 拼图"></div>
-          <div class="field" style="display:flex;align-items:flex-end"><button class="btn-ghost" id="hobby-add-type">+ 添加爱好</button></div>
+          <div class="field" style="max-width:340px"><label>新增爱好</label>
+            <div class="input-with-btn"><input type="text" id="hobby-new" placeholder="如：绘画 / 拼图"><button class="btn-ghost" id="hobby-add-type">+ 添加爱好</button></div>
+          </div>
         </div>
         <div class="row" style="align-items:flex-end;margin-top:12px">
-          <div class="field" style="max-width:220px"><label>本爱好累计花费 (¥)</label><input type="number" id="hobby-cost" min="0" step="0.01" placeholder="0"></div>
-          <div class="field" style="display:flex;align-items:flex-end"><button class="btn-ghost" id="hobby-cost-save">保存花费</button></div>
+          <div class="field" style="max-width:340px"><label>本爱好累计花费 (¥)</label>
+            <div class="input-with-btn"><input type="number" id="hobby-cost" min="0" step="0.01" placeholder="0"><button class="btn-ghost" id="hobby-cost-save">保存花费</button></div>
+          </div>
         </div>
         <div class="hint">花费按「整个爱好」累计记录，不在每件作品上填——比如你为十字绣一共花了多少钱。</div>
       </div>
@@ -824,8 +893,9 @@
           <div class="field" style="max-width:160px"><label>花费时长 (小时)</label><input type="number" id="hb-hours" min="0" step="0.5"></div>
         </div>
         <div class="row" style="margin-top:12px;align-items:flex-end">
-          <div class="field"><label>成品照片（可选，自动压缩）</label><input type="file" id="hb-photo" accept="image/*"></div>
-          <div class="field" style="display:flex;align-items:flex-end;gap:8px"><button class="btn-primary" id="hb-add">保存作品</button><button class="btn-ghost btn-sm" id="hb-cancel" style="display:none">取消</button></div>
+          <div class="field"><label>成品照片（可选，自动压缩）</label>
+            <div class="input-with-btn"><input type="file" id="hb-photo" accept="image/*"><button class="btn-primary" id="hb-add">保存作品</button><button class="btn-ghost btn-sm" id="hb-cancel" style="display:none">取消</button></div>
+          </div>
         </div>
         <div style="margin:8px 0 16px">
           <span class="stat"><span class="num" id="hb-total-cost">0</span><span class="lbl">总花费 ¥</span></span>
@@ -852,6 +922,11 @@
           <span class="sub" id="f-sub">—</span>
         </div>
         <div class="zodiac-bar" id="f-zodiac"></div>
+
+        <div class="row" style="align-items:flex-end;margin-top:10px">
+          <div class="field" style="max-width:220px"><label>你的 MBTI</label><select id="mbti-sel"></select></div>
+          <div class="field field-btn"><label>&nbsp;</label><span class="tag" id="mbti-trait"></span></div>
+        </div>
 
         <div class="fortune-overall">
           <span class="stars" id="f-overall-stars">★★★★★</span>
@@ -893,10 +968,13 @@ function load() {
     schedules: [],
     shopping: [],
     purchases: [],
-    savings: { allowance: '', daily: '', weekly: '', monthly: '', months: [] },
+    savings: { allowance: '', months: [], extra: [] },
     hobbies: { types: ['十字绣', '拼豆', '石塑粘土'], records: [], costMap: {} },
     drinks: [],
     timers: [],
+    shopCats: ['日用品', '食物', '其他'],
+    weight: { initial: 50, records: [] },
+    fortuneMbti: 'INFP',
     icon: '',
     moduleIcons: {},
     theme: 'kapi'
@@ -932,6 +1010,7 @@ function switchSec(sec) {
   document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === 'sec-' + sec));
   if (window.innerWidth <= 720) window.scrollTo(0, 0);
   if (sec === 'home') refreshQuote();
+  if (sec === 'diet') renderWeight();
 }
 document.querySelectorAll('[data-sec]').forEach(el => el.addEventListener('click', () => switchSec(el.dataset.sec)));
 
@@ -999,6 +1078,61 @@ function fastReset() { if (!confirm('确定重置断食计时？已记录的历�
 document.getElementById('fast-toggle').addEventListener('click', fastToggle);
 document.getElementById('fast-reset').addEventListener('click', fastReset);
 setInterval(fastTick, 1000);
+
+/* ============ 减肥：体重（滑块 + 折线图）============ */
+function renderWeight() {
+  const w = DB.weight;
+  const recs = w.records.slice().sort((a, b) => a.date.localeCompare(b.date));
+  const cur = recs.length ? num(recs[recs.length - 1].value) : num(w.initial);
+  const init = num(w.initial);
+  const curEl = document.getElementById('w-cur'); if (curEl) curEl.textContent = cur.toFixed(1);
+  const subEl = document.getElementById('w-sub'); if (subEl) subEl.textContent = `初始 ${init.toFixed(1)} kg　|　较初始 ${(cur - init).toFixed(1)} kg`;
+  const slider = document.getElementById('w-slider'); if (slider) slider.value = cur;
+  const slval = document.getElementById('w-slval'); if (slval) slval.textContent = cur.toFixed(1);
+  const list = document.getElementById('w-list');
+  if (!list) return;
+  if (!recs.length) { list.innerHTML = '<div class="empty">还没有体重记录，拖动滑块后点「记录今日体重」</div>'; }
+  else {
+    list.innerHTML = recs.slice().reverse().map(r => `<div class="item"><div class="info"><div class="title">⚖️ ${num(r.value).toFixed(1)} kg</div><div class="meta">${r.date}</div></div><div class="acts"><button class="btn-ghost btn-sm" data-wedit="${r.date}">修改</button><button class="btn-danger btn-sm" data-wdel="${r.date}">✕</button></div></div>`).join('');
+    list.querySelectorAll('[data-wedit]').forEach(b => b.addEventListener('click', () => { const r = DB.weight.records.find(x => x.date === b.dataset.wedit); if (r) { const sl = document.getElementById('w-slider'); if (sl) sl.value = r.value; const sv = document.getElementById('w-slval'); if (sv) sv.textContent = num(r.value).toFixed(1); } }));
+    list.querySelectorAll('[data-wdel]').forEach(b => b.addEventListener('click', () => { DB.weight.records = DB.weight.records.filter(x => x.date !== b.dataset.wdel); save(); renderWeight(); }));
+  }
+  drawWeightChart();
+}
+document.getElementById('w-slider').addEventListener('input', () => { const v = num(document.getElementById('w-slider').value); const sv = document.getElementById('w-slval'); if (sv) sv.textContent = v.toFixed(1); });
+document.getElementById('w-record').addEventListener('click', () => {
+  const v = num(document.getElementById('w-slider').value);
+  if (!v) { alert('请先拖动滑块选择体重'); return; }
+  const today = todayStr();
+  const ex = DB.weight.records.find(r => r.date === today);
+  if (ex) ex.value = v; else DB.weight.records.push({ date: today, value: v });
+  save(); renderWeight();
+  const btn = document.getElementById('w-record'); btn.textContent = '已记录 ✓'; setTimeout(() => btn.textContent = '记录今日体重', 1200);
+});
+document.getElementById('w-chart').addEventListener('click', () => {
+  const box = document.getElementById('w-chart-box');
+  if (!box) return;
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  if (box.style.display === 'block') drawWeightChart();
+});
+function drawWeightChart() {
+  const box = document.getElementById('w-chart-svg');
+  if (!box) return;
+  const recs = DB.weight.records.slice().sort((a, b) => a.date.localeCompare(b.date));
+  if (recs.length < 2) { box.innerHTML = '<div class="hint">至少需要 2 条记录才能画折线图～</div>'; return; }
+  const W = 320, H = 160, pad = 30;
+  const vals = recs.map(r => num(r.value));
+  const mn = Math.min(...vals), mx = Math.max(...vals);
+  const lo = Math.floor(mn - 1), hi = Math.ceil(mx + 1);
+  const xs = i => pad + i * (W - 2 * pad) / (recs.length - 1);
+  const ys = v => H - pad - (v - lo) / ((hi - lo) || 1) * (H - 2 * pad);
+  const pts = recs.map((r, i) => `${xs(i).toFixed(1)},${ys(num(r.value)).toFixed(1)}`).join(' ');
+  let grid = '';
+  for (let g = 0; g <= 4; g++) { const v = lo + (hi - lo) * g / 4; const y = ys(v); grid += `<line x1="${pad}" y1="${y.toFixed(1)}" x2="${W - pad}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1"/><text x="2" y="${(y + 3).toFixed(1)}" font-size="9" fill="var(--muted)">${v.toFixed(0)}</text>`; }
+  const step = Math.max(1, Math.ceil(recs.length / 5));
+  let labels = recs.map((r, i) => i % step === 0 ? `<text x="${xs(i).toFixed(1)}" y="${H - 8}" font-size="8" fill="var(--muted)" text-anchor="middle">${r.date.slice(5)}</text>` : '').join('');
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:360px;display:block;margin:8px auto"><polyline fill="none" stroke="var(--brand)" stroke-width="2" points="${pts}"/>${recs.map((r, i) => `<circle cx="${xs(i).toFixed(1)}" cy="${ys(num(r.value)).toFixed(1)}" r="3" fill="var(--brand)"/>`).join('')}${grid}${labels}</svg>`;
+}
 
 /* ============ 减肥：三餐（食物+克数自动算热量）============ */
 const FOOD_DB = {
@@ -1570,6 +1704,7 @@ function editShop(id) {
   if (!s) return;
   shopEditing = id;
   document.getElementById('shop-input').value = s.text || '';
+  document.getElementById('shop-cat').value = s.cat || '';
   const btn = document.getElementById('shop-add');
   btn.textContent = '保存修改'; btn.classList.add('editing');
   document.getElementById('shop-cancel').style.display = '';
@@ -1585,15 +1720,31 @@ function cancelShopEdit() {
 document.getElementById('shop-cancel').addEventListener('click', cancelShopEdit);
 document.getElementById('shop-add').addEventListener('click', addShop);
 document.getElementById('shop-input').addEventListener('keydown', e => { if (e.key === 'Enter') addShop(); });
+function renderShopCats() {
+  const sel = document.getElementById('shop-cat');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = DB.shopCats.map(c => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join('');
+  if (cur && DB.shopCats.includes(cur)) sel.value = cur;
+}
+document.getElementById('shop-add-cat').addEventListener('click', () => {
+  const v = document.getElementById('shop-new-cat').value.trim();
+  if (!v) { alert('请输入分类名称'); return; }
+  if (DB.shopCats.includes(v)) { alert('该分类已存在'); return; }
+  DB.shopCats.push(v); save();
+  document.getElementById('shop-new-cat').value = '';
+  renderShopCats();
+});
 function addShop() {
   const v = document.getElementById('shop-input').value.trim();
   if (!v) { alert('请填写要买的东西'); return; }
+  const cat = document.getElementById('shop-cat').value || '';
   if (shopEditing) {
     const it = DB.shopping.find(x => x.id === shopEditing);
-    if (it) it.text = v;
+    if (it) { it.text = v; it.cat = cat; }
     save(); cancelShopEdit(); renderShop(); updateBadges(); return;
   }
-  DB.shopping.push({ id: uid(), text: v, done: false, note: '', buyTime: '', amount: '' });
+  DB.shopping.push({ id: uid(), text: v, cat, done: false, note: '', buyTime: '', amount: '' });
   save(); document.getElementById('shop-input').value = ''; renderShop(); updateBadges();
 }
 function renderShop() {
@@ -1610,7 +1761,7 @@ function renderShop() {
     <div class="shop-item-wrap ${s.done ? 'done' : ''}">
       <div class="item shop-item">
         <input type="checkbox" ${s.done ? 'checked' : ''} data-chk="${s.id}">
-        <div class="text">${escapeHtml(s.text)}</div>
+        <div class="text">${escapeHtml(s.text)}${s.cat ? `<span class="cat-tag">${escapeHtml(s.cat)}</span>` : ''}</div>
         <div class="acts">
           <button class="btn-ghost btn-sm" data-edit="${s.id}">修改</button>
           <button class="btn-danger btn-sm" data-del="${s.id}">✕</button>
@@ -1619,7 +1770,7 @@ function renderShop() {
       <div class="shop-sub">
         <div class="sub-field"><label>批注</label><input type="text" class="note" placeholder="如：买给妈妈" value="${escapeAttr(s.note)}" data-note="${s.id}"></div>
         <div class="sub-field"><label>购买时间</label><input type="datetime-local" class="buy-time" value="${escapeAttr(s.buyTime)}" data-buytime="${s.id}"></div>
-        <div class="sub-field"><label>购买价钱 (¥)</label><input type="text" inputmode="decimal" class="buy-amt" placeholder="0.00" value="${escapeAttr(s.amount)}" data-amt="${s.id}"></div>
+        <div class="sub-field"><label>价钱¥</label><input type="text" inputmode="decimal" class="buy-amt" placeholder="0.00" value="${escapeAttr(s.amount)}" data-amt="${s.id}"></div>
       </div>
     </div>`).join('');
   list.querySelectorAll('[data-chk]').forEach(c => c.addEventListener('change', () => { const it = DB.shopping.find(x => x.id === c.dataset.chk); it.done = c.checked; save(); renderShop(); updateBadges(); }));
@@ -1692,20 +1843,15 @@ function renderPurchases() {
   list.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => { DB.purchases = DB.purchases.filter(x => x.id !== b.dataset.del); save(); renderPurchases(); }));
 }
 
-/* ============ 存钱（月度总花销）============ */
+/* ============ 存钱（月度花销 + 额外入账）============ */
 (function initSavings() {
-  document.getElementById('sv-allowance').value = DB.savings.allowance;
-  document.getElementById('sv-daily').value = DB.savings.daily;
-  document.getElementById('sv-weekly').value = DB.savings.weekly;
-  document.getElementById('sv-monthly').value = DB.savings.monthly;
+  document.getElementById('sv-allowance').value = DB.savings.allowance || '';
   const now = new Date();
   document.getElementById('sv-month').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('sv-extra-date').value = todayStr();
 })();
 document.getElementById('sv-save-set').addEventListener('click', () => {
   DB.savings.allowance = document.getElementById('sv-allowance').value;
-  DB.savings.daily = document.getElementById('sv-daily').value;
-  DB.savings.weekly = document.getElementById('sv-weekly').value;
-  DB.savings.monthly = document.getElementById('sv-monthly').value;
   save(); renderSavings(); alert('设定已保存');
 });
 document.getElementById('sv-add').addEventListener('click', () => {
@@ -1719,31 +1865,78 @@ document.getElementById('sv-add').addEventListener('click', () => {
   document.getElementById('sv-month-spend').value = '';
   renderSavings(); updateBadges();
 });
+let svExtraEditing = null;
+function editExtra(id) {
+  const it = DB.savings.extra.find(x => x.id === id); if (!it) return;
+  svExtraEditing = id;
+  document.getElementById('sv-extra-date').value = it.date || todayStr();
+  document.getElementById('sv-extra-amt').value = it.amount;
+  document.getElementById('sv-extra-note').value = it.note || '';
+  const b = document.getElementById('sv-extra-add'); b.textContent = '保存修改'; b.classList.add('editing');
+  document.getElementById('sv-extra-cancel').style.display = '';
+}
+function cancelExtra() {
+  svExtraEditing = null;
+  document.getElementById('sv-extra-amt').value = '';
+  document.getElementById('sv-extra-note').value = '';
+  const b = document.getElementById('sv-extra-add'); b.textContent = '添加'; b.classList.remove('editing');
+  document.getElementById('sv-extra-cancel').style.display = 'none';
+}
+document.getElementById('sv-extra-cancel').addEventListener('click', cancelExtra);
+document.getElementById('sv-extra-add').addEventListener('click', () => {
+  const date = document.getElementById('sv-extra-date').value || todayStr();
+  const amount = num(document.getElementById('sv-extra-amt').value);
+  const note = document.getElementById('sv-extra-note').value.trim();
+  if (!amount) { alert('请填写金额'); return; }
+  if (svExtraEditing) {
+    const it = DB.savings.extra.find(x => x.id === svExtraEditing);
+    if (it) { it.date = date; it.amount = amount; it.note = note; }
+    save(); cancelExtra(); renderSavings(); return;
+  }
+  DB.savings.extra.push({ id: uid(), date, amount, note });
+  save();
+  document.getElementById('sv-extra-amt').value = '';
+  document.getElementById('sv-extra-note').value = '';
+  renderSavings();
+});
 function renderSavings() {
   const list = document.getElementById('sv-list');
   const months = DB.savings.months;
   const totalSpend = months.reduce((s, m) => s + m.amount, 0);
+  const extraTotal = DB.savings.extra.reduce((s, e) => s + e.amount, 0);
   const allowance = num(DB.savings.allowance);
-  const monthlyBudget = num(DB.savings.monthly);
   const selMonth = document.getElementById('sv-month').value;
   const sel = months.find(m => m.month === selMonth);
   document.getElementById('sv-total-spend').textContent = totalSpend.toFixed(2);
   document.getElementById('sv-saved').textContent = sel ? (allowance - sel.amount).toFixed(2) : '—';
-  document.getElementById('sv-plan-saved').textContent = monthlyBudget ? (allowance - monthlyBudget).toFixed(2) : '—';
-  if (!months.length) { list.innerHTML = '<div class="empty">还没有任何月份的花销记录</div>'; return; }
-  list.innerHTML = months.slice().sort((a, b) => b.month.localeCompare(a.month)).map(m => {
-    const saved = allowance - m.amount;
-    return `<div class="item">
-      <div class="info">
-        <div class="title">📅 ${m.month}</div>
-        <div class="meta">总花销 ${m.amount.toFixed(2)} 元　|　存下 <b style="color:var(--green)">${saved.toFixed(2)}</b> 元</div>
-      </div>
-      <button class="btn-danger btn-sm" data-del="${m.month}">删除</button>
-    </div>`;
-  }).join('');
-  list.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => {
-    DB.savings.months = DB.savings.months.filter(x => x.month !== b.dataset.del); save(); renderSavings(); updateBadges();
-  }));
+  document.getElementById('sv-extra-total').textContent = extraTotal.toFixed(2);
+  if (!months.length) { list.innerHTML = '<div class="empty">还没有任何月份的花销记录</div>'; }
+  else {
+    list.innerHTML = months.slice().sort((a, b) => b.month.localeCompare(a.month)).map(m => {
+      const saved = allowance - m.amount;
+      const real = saved + extraTotal;
+      return `<div class="item">
+        <div class="info">
+          <div class="title">📅 ${m.month}</div>
+          <div class="meta">总花销 ${m.amount.toFixed(2)} 元　|　存下 <b style="color:var(--green)">${saved.toFixed(2)}</b> 元　|　含额外入账实结余 <b style="color:var(--green)">${real.toFixed(2)}</b> 元</div>
+        </div>
+        <button class="btn-danger btn-sm" data-del="${m.month}">删除</button>
+      </div>`;
+    }).join('');
+    list.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => {
+      DB.savings.months = DB.savings.months.filter(x => x.month !== b.dataset.del); save(); renderSavings(); updateBadges();
+    }));
+  }
+  const elist = document.getElementById('sv-extra-list');
+  if (!DB.savings.extra.length) { elist.innerHTML = '<div class="empty">还没有额外入账记录</div>'; }
+  else {
+    elist.innerHTML = DB.savings.extra.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(e => `<div class="item">
+      <div class="info"><div class="title">💰 ${e.amount.toFixed(2)} 元</div><div class="meta">${e.date || ''}　${escapeHtml(e.note || '')}</div></div>
+      <div class="acts"><button class="btn-ghost btn-sm" data-eedit="${e.id}">修改</button><button class="btn-danger btn-sm" data-edel="${e.id}">✕</button></div>
+    </div>`).join('');
+    elist.querySelectorAll('[data-eedit]').forEach(b => b.addEventListener('click', () => editExtra(b.dataset.eedit)));
+    elist.querySelectorAll('[data-edel]').forEach(b => b.addEventListener('click', () => { DB.savings.extra = DB.savings.extra.filter(x => x.id !== b.dataset.edel); save(); renderSavings(); }));
+  }
 }
 
 /* ============ 兴趣爱好 ============ */
@@ -1762,10 +1955,20 @@ function migrateHobbyCosts() {
 }
 function renderHobbyTabs() {
   const box = document.getElementById('hobby-tabs');
-  box.innerHTML = DB.hobbies.types.map(t => `<div class="tab ${t === curHobby ? 'active' : ''}" data-h="${t}">${escapeHtml(t)}</div>`).join('');
-  box.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => { curHobby = tab.dataset.h; renderHobbyTabs(); renderHobbies(); }));
+  box.innerHTML = DB.hobbies.types.map(t => `<div class="tab ${t === curHobby ? 'active' : ''}" data-h="${t}">${escapeHtml(t)}${DB.hobbies.types.length > 1 ? `<span class="tab-x" data-hx="${escapeAttr(t)}" title="删除该爱好">✕</span>` : ''}</div>`).join('');
+  box.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', e => { if (e.target.classList.contains('tab-x')) return; curHobby = tab.dataset.h; renderHobbyTabs(); renderHobbies(); }));
+  box.querySelectorAll('.tab-x').forEach(x => x.addEventListener('click', e => { e.stopPropagation(); deleteHobby(x.dataset.hx); }));
   const ci = document.getElementById('hobby-cost');
   if (ci) ci.value = hobbyCost(curHobby) ? hobbyCost(curHobby) : '';
+}
+function deleteHobby(t) {
+  if (!confirm(`确定删除爱好「${t}」？该爱好的累计花费与所有作品也会一并删除。`)) return;
+  if (DB.hobbies.types.length <= 1) { alert('至少保留一个爱好'); return; }
+  DB.hobbies.types = DB.hobbies.types.filter(x => x !== t);
+  delete DB.hobbies.costMap[t];
+  DB.hobbies.records = DB.hobbies.records.filter(r => r.type !== t);
+  if (curHobby === t) curHobby = DB.hobbies.types[0];
+  save(); renderHobbyTabs(); renderHobbies(); updateBadges();
 }
 document.getElementById('hobby-add-type').addEventListener('click', () => {
   const v = document.getElementById('hobby-new').value.trim();
@@ -1874,6 +2077,26 @@ function renderHobbies() {
 const SCORPIO = {
   name: '天蝎座', range: '10.23 – 11.21', element: '水象', planet: '冥王星', stone: '黄玉 · 碧玺', trait: '深沉 · 直觉 · 执着'
 };
+const MBTI = {
+  INFP: '理想主义者 · 温柔而有深度', INFJ: '提倡者 · 洞察人心', INTP: '逻辑学家 · 热爱思辨', INTJ: '建筑师 · 战略思维',
+  ISFP: '探险家 · 活在当下', ISFJ: '守护者 · 细腻可靠', ISTP: '鉴赏家 · 冷静实操', ISTJ: '物流师 · 严谨负责',
+  ENFP: '竞选者 · 热情洋溢', ENFJ: '主人公 · 鼓舞他人', ENTP: '辩论家 · 机敏善辩', ENTJ: '指挥官 · 天生领袖',
+  ESFP: '表演者 · 活泼有趣', ESFJ: '执政官 · 热心周到', ESTP: '企业家 · 行动派', ESTJ: '总经理 · 高效有序'
+};
+function initMbti() {
+  const sel = document.getElementById('mbti-sel');
+  if (!sel) return;
+  sel.innerHTML = Object.keys(MBTI).map(k => `<option value="${k}">${k}</option>`).join('');
+  sel.value = DB.fortuneMbti || 'INFP';
+  updateMbti();
+}
+function updateMbti() {
+  const k = document.getElementById('mbti-sel').value;
+  DB.fortuneMbti = k; save();
+  const t = document.getElementById('mbti-trait'); if (t) t.textContent = MBTI[k] || '';
+  renderFortune();
+}
+document.getElementById('mbti-sel').addEventListener('change', updateMbti);
 const FORTUNE_COLORS = [
   { n: '酒红', h: '#8B1A2B' }, { n: '墨绿', h: '#1F4E3D' }, { n: '雾霾蓝', h: '#6E8CA0' },
   { n: '暖橙', h: '#E07A3F' }, { n: '米白', h: '#EFE7D6' }, { n: '莓紫', h: '#6B3FA0' },
@@ -1928,7 +2151,8 @@ function renderFortune() {
   document.getElementById('f-weekday').textContent = wd;
   document.getElementById('f-sub').textContent = `${d.getFullYear()}年 · 第 ${weekOfYear} 周`;
   document.getElementById('f-zodiac').innerHTML = [
-    SCORPIO.name, SCORPIO.range, SCORPIO.element, '守护星' + SCORPIO.planet, '幸运石' + SCORPIO.stone, SCORPIO.trait
+    SCORPIO.name, SCORPIO.range, SCORPIO.element, '守护星' + SCORPIO.planet, '幸运石' + SCORPIO.stone, SCORPIO.trait,
+    'MBTI ' + (DB.fortuneMbti || 'INFP') + ' · ' + (MBTI[DB.fortuneMbti] || '')
   ].map(t => `<span class="zchip">${t}</span>`).join('');
 
   const rnd = seededRandom(ds + SCORPIO.name);
@@ -2238,12 +2462,14 @@ renderDiaries();
 renderStudy();
 renderWeek();
 renderShop();
+renderShopCats();
 renderPurchases();
 renderSavings();
 renderHobbyTabs();
 migrateHobbyCosts();
 renderHobbies();
 fastRender();
+renderWeight();
 const fsdt = document.getElementById('fast-start-dt'); if (fsdt) fsdt.value = nowLocalStr();
 renderHome();
 applyNavDogs();
@@ -2262,6 +2488,7 @@ tickClock(); setInterval(tickClock, 1000);
 timerTick(); setInterval(timerTick, 1000);
 document.getElementById('fortune-date').value = new Date().toISOString().slice(0, 10);
 renderFortune();
+initMbti();
 updateBadges();
 </script>
 <script>
